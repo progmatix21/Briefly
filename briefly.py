@@ -40,17 +40,19 @@ class HTMLFormatter(Formatter):
 		preHTML='''
 		<!doctype HTML>
 		<head></head>
-		<title>Briefly summary</title>
+		<title>Briefly: summary</title>
 		<body>
-		<p>
+		<h1>Briefly: summary</h1>
+		<ul>
 		'''
 		postHTML='''
-		</p>
-		<small style="font-size="5px;">Generated with Briefly</small>
+		</ul>
+		<small style="font-size="5px;">Generated with <a href="https://github.com/progmatix21/Briefly">Briefly</a></small>
 		</body>		
 		</html>
 		'''
-		return(preHTML+" ".join(self.sentences)+postHTML)
+		tagged_sents = ['<li>' + sent + '</li>' for sent in self.sentences]
+		return(preHTML+" ".join(tagged_sents)+postHTML)
 		
 	
 
@@ -180,7 +182,7 @@ if __name__ == "__main__":
 	#print("Document list: ",doc_list)
 	# Instantiate the top2vec class
 	my_top2vec = Strategy_top2vec(doc_list)
-	print("Number of topics: ",my_top2vec._num_topics)
+	#print("Number of topics: ",my_top2vec._num_topics)
 	my_summary = my_top2vec.executeStrategy()
 	
 	my_formatter = HTMLFormatter(my_summary)
