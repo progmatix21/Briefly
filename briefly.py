@@ -22,8 +22,41 @@ class Formatter(ABC):
 	@abstractmethod
 	def getSummary():
 		pass
+
+
+class Strategy(ABC):
+	"""
+	Creates the Strategy Abstract Base Class
+	"""
+	@abstractmethod
+	def executeStrategy():
+		pass
+
+
+class SummarizerContext():
+	# Aggregates a context to do the summarization
+	def __init__(self,filename):
+		self._filename = filename
+		self._text_prepping_strategy = None
+		self._summarizing_strategy = None
+		self._formatter = None
+				
+	def set_text_prepping_strategy(self,strategy_obj):
+		self._text_prepping_strategy = strategy_obj	
 	
-	
+	def set_summarizing_strategy(self,strategy_obj):
+		self._summarizing_strategy = strategy_obj
+		
+	def set_formatter(self,formatter_obj):
+		self._formatter = formatter_obj
+		
+	def summarize(self):
+		doc_list = _text_prepping_strategy.executeStrategy(args.filename)
+		summary_tuples = self._summarizing_strategy.executeStrategy(doc_list)
+		return self._formatter.getSummary(summary_tuples)
+		
+
+		
 class HTMLFormatter(Formatter):
 	"""
 	This is a subclass of the Formatter class.
@@ -32,11 +65,12 @@ class HTMLFormatter(Formatter):
 	# Summary is provided as a tuple of three lists
 	# doc_ids, sentences, scores
 	# We want just the sentences
-	def __init__(self,summary):
+	def __init__(self):
+		pass
+		
+	def getSummary(self,summary):
 		_,self.sentences,_ = list(zip(*summary))
 		
-		
-	def getSummary(self):
 		preHTML='''
 		<!doctype HTML>
 		<head></head>
@@ -54,38 +88,33 @@ class HTMLFormatter(Formatter):
 		tagged_sents = ['<li>' + sent + '</li>' for sent in self.sentences]
 		return(preHTML+" ".join(tagged_sents)+postHTML)
 		
-	
-
-class Strategy(ABC):
-	"""
-	Creates the Strategy Abstract Base Class
-	"""
-	@abstractmethod
-	def executeStrategy():
-		pass
-	
 
 class Strategy_top2vec(Strategy):
 	"""
 	This is a subclass of Strategy base class.
 	Abstract methods of Strategy base class are implemented here.
 	"""
-	def __init__(self,document_list):
-		self._document_list = document_list
+	def __init__(self):
 		# min cluster size should be atleast 2.  We keep it fixed and control
 		# the clustering with the merge threshold.
-		hdbscan_args_dict = {'min_cluster_size':2,
+		self._hdbscan_args_dict = {'min_cluster_size':2,
 		'cluster_selection_epsilon':args.merge_threshold,
 		'cluster_selection_method':'eom'}
-		self._model = Top2Vec(self._document_list, min_count=args.min_word_count, hdbscan_args=hdbscan_args_dict)
+		
+		
+	def _init_model(self):
+		# Initialize the topic modelling algorithm
+		self._model = Top2Vec(self._document_list, min_count=args.min_word_count, hdbscan_args=self._hdbscan_args_dict)
 	
 		self._num_topics = self._model.get_num_topics()
 		self.top_docs_per_topic = args.summary_size
-		self.topic_sizes,self.topic_nums = self._model.get_topic_sizes()
-
+		self.topic_sizes,self.topic_nums = self._model.get_topic_sizes()	
 	
-	def executeStrategy(self):
+	def executeStrategy(self,document_list):
 		
+		self._document_list = document_list
+		self._init_model()
+				
 		meta_documents = []
 		meta_document_scores = []
 		meta_document_ids = []
@@ -121,10 +150,11 @@ class Strategy_text_prep(Strategy):
 	This is a subclass of Strategy base class.
 	Abstract methods of Strategy base class are implemented here.
 	"""
+	'''
 	def __init__(self,filename):
 		# Create a text blob out of file
 		self._text_blob = self._make_blob(filename)
-	
+	'''
 	def _make_blob(self,filename):
 		# Read text and return a text blob
 		text_blob = ""
@@ -148,13 +178,16 @@ class Strategy_text_prep(Strategy):
 		sent_matches = re.split(split_pat, text_blob)
 		return np.array(sent_matches)
 		
-	def executeStrategy(self):
-		return self._make_sentence_list(self._text_blob)
+	def executeStrategy(self,filename):
+		text_blob = self._make_blob(filename)
+		sentence_list = self._make_sentence_list(text_blob)
+		return sentence_list
+		#return self._make_sentence_list(self._text_blob)
 	
-if __name__ == "__main__":
-	
+def parseArgs():
+	# Argument parser
 	parser = argparse.ArgumentParser(description="A program to summarize a text file.")
-	
+
 	# Add a positional argument	
 	parser.add_argument("filename", type=str, help="The name of the file to summarize")
 	
@@ -169,22 +202,30 @@ if __name__ == "__main__":
 	parser.add_argument("-s", "--summary_size", metavar='', type=int, default=3, 
 	help="Number of sentences per summarized subtopic.")	
 	
-	# Parse the args
-	args = parser.parse_args()
+	# return the parsed args
+	return parser.parse_args()
+
+if __name__ == "__main__":
 	
+	args = parseArgs()
+
 	#documents = Strategy_text_prep(args.filename)
 	
 	# Testing the Strategy_text_prep class
 	# Opening the file and creating the text blob is done here.
-	text_prepper = Strategy_text_prep(args.filename)
+	text_prepper = Strategy_text_prep()
+	
 	# Get document/sentence list (the long list of sentences or docs)
-	doc_list = text_prepper.executeStrategy()
+	doc_list = text_prepper.executeStrategy(args.filename)
+	
+	
+	
 	#print("Document list: ",doc_list)
 	# Instantiate the top2vec class
-	my_top2vec = Strategy_top2vec(doc_list)
+	my_top2vec = Strategy_top2vec()
 	#print("Number of topics: ",my_top2vec._num_topics)
-	my_summary = my_top2vec.executeStrategy()
+	my_summary = my_top2vec.executeStrategy(doc_list)
 	
-	my_formatter = HTMLFormatter(my_summary)
-	my_formatted_summary = my_formatter.getSummary()
+	my_formatter = HTMLFormatter()
+	my_formatted_summary = my_formatter.getSummary(my_summary)
 	print(my_formatted_summary)
