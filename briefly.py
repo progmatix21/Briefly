@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 '''
-tldr.py is an extractive command line text summarizer.  It uses topic
+briefly.py is an extractive command line text summarizer.  It uses topic
 modelling at the document level rather than at the corpus level.  The
 current algorithm being used is top2vec.
 
@@ -51,9 +51,10 @@ class SummarizerContext():
 		self._formatter = formatter_obj
 		
 	def summarize(self):
-		doc_list = _text_prepping_strategy.executeStrategy(args.filename)
+		doc_list = self._text_prepping_strategy.executeStrategy(args.filename)
 		summary_tuples = self._summarizing_strategy.executeStrategy(doc_list)
-		return self._formatter.getSummary(summary_tuples)
+		condensation_ratio = round(len(summary_tuples)/len(doc_list),2)
+		return self._formatter.getSummary(summary_tuples,condensation_ratio)
 		
 
 		
@@ -68,8 +69,10 @@ class HTMLFormatter(Formatter):
 	def __init__(self):
 		pass
 		
-	def getSummary(self,summary):
+	def getSummary(self,summary,condensation_ratio):
 		_,self.sentences,_ = list(zip(*summary))
+		
+		c_ratio = condensation_ratio
 		
 		preHTML='''
 		<!doctype HTML>
@@ -79,9 +82,10 @@ class HTMLFormatter(Formatter):
 		<h1>Briefly: summary</h1>
 		<ul>
 		'''
-		postHTML='''
+		postHTML=f'''
 		</ul>
-		<small style="font-size="5px;">Generated with <a href="https://github.com/progmatix21/Briefly">Briefly</a></small>
+		<small style="font-size=5px;">Condensed to {c_ratio}</small><br/>
+		<small style="font-size=5px;">Generated with <a href="https://github.com/progmatix21/Briefly">Briefly</a></small>
 		</body>		
 		</html>
 		'''
@@ -136,25 +140,14 @@ class Strategy_top2vec(Strategy):
 		
 		# Return the summary as a tuple sorted on document ID.
 		return sorted(zip(meta_document_ids, meta_documents, meta_document_scores ))
-		
-		'''
-		for doc_id, doc, score  in sorted(zip(meta_document_ids, meta_documents, meta_document_scores )):
-			#print(f"Document: {doc_id}, Score: {score} >>>")
-			print(f"{doc}.",end="  ")
-			#print("----------------")
-		print()
-		'''
+	
 
 class Strategy_text_prep(Strategy):
 	"""
 	This is a subclass of Strategy base class.
 	Abstract methods of Strategy base class are implemented here.
 	"""
-	'''
-	def __init__(self,filename):
-		# Create a text blob out of file
-		self._text_blob = self._make_blob(filename)
-	'''
+
 	def _make_blob(self,filename):
 		# Read text and return a text blob
 		text_blob = ""
@@ -193,14 +186,17 @@ def parseArgs():
 	
 	# Define the optional arguments
 
-	parser.add_argument("-m","--min_word_count",metavar='',type=int, default=2, 
-	help="Sentences with words having counts < this number will be dropped.")
+	m_default = 2
+	parser.add_argument("-m","--min_word_count",metavar='min word count',type=int, default=m_default, 
+	help=f"Sentences with words having counts < this number will be dropped.[{m_default}]")
 	
-	parser.add_argument("-t", "--merge_threshold", metavar='', type=float, default=0.0, 
-	help="Sentences closer than this threshold are merged into a single subtopic.")
+	t_default = 0.01
+	parser.add_argument("-t", "--merge_threshold", metavar='merge threshold', type=float, default=t_default, 
+	help=f"Sentences closer than this threshold are merged into a single subtopic.[{t_default}]")
 
-	parser.add_argument("-s", "--summary_size", metavar='', type=int, default=3, 
-	help="Number of sentences per summarized subtopic.")	
+	s_default = 2
+	parser.add_argument("-s", "--summary_size", metavar='summary size', type=int, default=s_default, 
+	help=f"Number of sentences per summarized subtopic.[{s_default}]")	
 	
 	# return the parsed args
 	return parser.parse_args()
@@ -208,24 +204,22 @@ def parseArgs():
 if __name__ == "__main__":
 	
 	args = parseArgs()
+	
+	# Create a summarizer context
+	my_summarizer_context = SummarizerContext(args.filename)
+	
+	# Create a text prepping strategy object and set it
+	text_prepper_strategy = Strategy_text_prep()
+	my_summarizer_context.set_text_prepping_strategy(text_prepper_strategy)
+	
+	# Create a summarizing strategy and set it
+	top2vec_strategy = Strategy_top2vec()
+	my_summarizer_context.set_summarizing_strategy(top2vec_strategy)
+	
+	# Create a formatter and set it
+	html_formatter = HTMLFormatter()
+	my_summarizer_context.set_formatter(html_formatter)
+	
+	
+	print(my_summarizer_context.summarize())
 
-	#documents = Strategy_text_prep(args.filename)
-	
-	# Testing the Strategy_text_prep class
-	# Opening the file and creating the text blob is done here.
-	text_prepper = Strategy_text_prep()
-	
-	# Get document/sentence list (the long list of sentences or docs)
-	doc_list = text_prepper.executeStrategy(args.filename)
-	
-	
-	
-	#print("Document list: ",doc_list)
-	# Instantiate the top2vec class
-	my_top2vec = Strategy_top2vec()
-	#print("Number of topics: ",my_top2vec._num_topics)
-	my_summary = my_top2vec.executeStrategy(doc_list)
-	
-	my_formatter = HTMLFormatter()
-	my_formatted_summary = my_formatter.getSummary(my_summary)
-	print(my_formatted_summary)
