@@ -7,8 +7,8 @@ standard output.  You can redirect this to a file.
 # Usage
 
 ```
-$ python3 briefly.py -h 
-usage: briefly.py [-h] [-m] [-t] [-s] filename
+$ python3 briefly.py -h
+usage: briefly.py [-h] [-m min word count] [-t merge threshold] [-s summary size] filename
 
 A program to summarize a text file.
 
@@ -17,12 +17,14 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -m , --min_word_count 
+  -m min word count, --min_word_count min word count
                         Sentences with words having counts < this number will be dropped.[2]
-  -t , --merge_threshold 
+  -t merge threshold, --merge_threshold merge threshold
                         Sentences closer than this threshold are merged into a single
                         subtopic.[0.01]
-  -s , --summary_size   Number of sentences per summarized subtopic.[2]
+  -s summary size, --summary_size summary size
+                        Number of sentences per summarized subtopic.[2]
+
 
 ```
 
