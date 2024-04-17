@@ -201,25 +201,34 @@ def parseArgs():
 	# return the parsed args
 	return parser.parse_args()
 
+class Summarizer():
+	# Creates the summarizer context and gets the summary.
+	
+	def __init__(self):
+		# Create a summarizer context
+		self.my_summarizer_context = SummarizerContext(args.filename)
+		
+		# Create a text prepping strategy object and set it
+		text_prepper_strategy = Strategy_text_prep()
+		self.my_summarizer_context.set_text_prepping_strategy(text_prepper_strategy)
+		
+		# Create a summarizing strategy and set it
+		top2vec_strategy = Strategy_top2vec()
+		self.my_summarizer_context.set_summarizing_strategy(top2vec_strategy)
+		
+		# Create a formatter and set it
+		html_formatter = HTMLFormatter()
+		self.my_summarizer_context.set_formatter(html_formatter)
+	
+	
+	def getSummary(self):
+		return self.my_summarizer_context.summarize()
+	
+
 if __name__ == "__main__":
 	
 	args = parseArgs()
 	
-	# Create a summarizer context
-	my_summarizer_context = SummarizerContext(args.filename)
-	
-	# Create a text prepping strategy object and set it
-	text_prepper_strategy = Strategy_text_prep()
-	my_summarizer_context.set_text_prepping_strategy(text_prepper_strategy)
-	
-	# Create a summarizing strategy and set it
-	top2vec_strategy = Strategy_top2vec()
-	my_summarizer_context.set_summarizing_strategy(top2vec_strategy)
-	
-	# Create a formatter and set it
-	html_formatter = HTMLFormatter()
-	my_summarizer_context.set_formatter(html_formatter)
-	
-	
-	print(my_summarizer_context.summarize())
-
+	my_summarizer = Summarizer()
+	summarized_text = my_summarizer.getSummary()
+	print(summarized_text)
