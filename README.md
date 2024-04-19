@@ -8,7 +8,7 @@ standard output.  You can redirect this to a file.
 
 ```
 $ python3 briefly.py -h
-usage: briefly.py [-h] [-m min word count] [-t merge threshold] [-s summary size] filename
+usage: briefly.py [-h] [-m min word count] [-t merge threshold] [-s summary size] [-v] filename
 
 A program to summarize a text file.
 
@@ -24,7 +24,7 @@ optional arguments:
                         subtopic.[0.01]
   -s summary size, --summary_size summary size
                         Number of sentences per summarized subtopic.[2]
-
+  -v, --verbose         Enable verbose mode.
 
 ```
 

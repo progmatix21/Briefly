@@ -10,10 +10,10 @@ import os
 import sys
 import re
 from top2vec import Top2Vec
+
 import numpy as np
 import argparse
 from abc import ABC, abstractmethod
-# load a text file
 
 class Formatter(ABC):
 	"""
@@ -108,8 +108,9 @@ class Strategy_top2vec(Strategy):
 		
 	def _init_model(self):
 		# Initialize the topic modelling algorithm
-		self._model = Top2Vec(self._document_list, min_count=args.min_word_count, hdbscan_args=self._hdbscan_args_dict)
-	
+		self._model = Top2Vec(self._document_list, min_count=args.min_word_count, 
+		hdbscan_args=self._hdbscan_args_dict,verbose=args.verbose)
+				
 		self._num_topics = self._model.get_num_topics()
 		self.top_docs_per_topic = args.summary_size
 		self.topic_sizes,self.topic_nums = self._model.get_topic_sizes()	
@@ -198,6 +199,8 @@ def parseArgs():
 	parser.add_argument("-s", "--summary_size", metavar='summary size', type=int, default=s_default, 
 	help=f"Number of sentences per summarized subtopic.[{s_default}]")	
 	
+	parser.add_argument("-v","--verbose", action='store_true', default=False,
+	help=f"Enable verbose mode.")
 	# return the parsed args
 	return parser.parse_args()
 
@@ -227,8 +230,9 @@ class Summarizer():
 
 if __name__ == "__main__":
 	
-	args = parseArgs()
-	
+	args = parseArgs()	
+
 	my_summarizer = Summarizer()
+	
 	summarized_text = my_summarizer.getSummary()
 	print(summarized_text)
