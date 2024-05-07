@@ -50,11 +50,24 @@ class SummarizerContext():
 	def set_formatter(self,formatter_obj):
 		self._formatter = formatter_obj
 		
-	def summarize(self):
+	def summarize(self,n_passes):
 		doc_list = self._text_prepping_strategy.executeStrategy(args.filename)
-		summary_tuples = self._summarizing_strategy.executeStrategy(doc_list)
-		condensation_ratio = round(len(summary_tuples)/len(doc_list),2)
-		return self._formatter.getSummary(summary_tuples,condensation_ratio)
+		
+		summary_tuples_set = set()   # Initialize set to accumulate results
+		# of multiple passes
+		summary_tuples_list = []  # Final tuples list to pass to
+		# formatter
+		
+		# get the summaries over n passes and aggregate them (by sorting) 
+		for _ in range(n_passes):			
+			# Each time, the model is re-initialized			
+			summary_tuples = self._summarizing_strategy.executeStrategy(doc_list)
+			summary_tuples_set.update(set(summary_tuples))
+		
+		# Create a sorted list of summary to give to formatter
+		summary_tuples_list = sorted(list(summary_tuples_set))
+		condensation_ratio = round(len(summary_tuples_set)/len(doc_list),2)
+		return self._formatter.getSummary(summary_tuples_list,condensation_ratio)
 		
 
 		
@@ -70,7 +83,7 @@ class HTMLFormatter(Formatter):
 		pass
 		
 	def getSummary(self,summary,condensation_ratio):
-		_,self.sentences,_ = list(zip(*summary))
+		_,self.sentences = list(zip(*summary))
 		
 		c_ratio = condensation_ratio
 		
@@ -139,8 +152,10 @@ class Strategy_top2vec(Strategy):
 		meta_document_scores = [item for sublist in meta_document_scores for item in sublist]
 		meta_documents = [item for sublist in meta_documents for item in sublist]
 		
-		# Return the summary as a tuple sorted on document ID.
-		return sorted(zip(meta_document_ids, meta_documents, meta_document_scores ))
+		# Return the summary as a list of tuples sorted on document ID.
+		# Hold back document scores because it interferes with multi-pass
+		# summarization
+		return sorted(zip(meta_document_ids, meta_documents))
 	
 
 class Strategy_text_prep(Strategy):
@@ -195,7 +210,7 @@ def parseArgs():
 	parser.add_argument("-t", "--merge_threshold", metavar='merge threshold', type=float, default=t_default, 
 	help=f"Sentences closer than this threshold are merged into a single subtopic.[{t_default}]")
 
-	s_default = 2
+	s_default = 1
 	parser.add_argument("-s", "--summary_size", metavar='summary size', type=int, default=s_default, 
 	help=f"Number of sentences per summarized subtopic.[{s_default}]")	
 	
@@ -224,8 +239,9 @@ class Summarizer():
 		self.my_summarizer_context.set_formatter(html_formatter)
 	
 	
-	def getSummary(self):
-		return self.my_summarizer_context.summarize()
+	def getSummary(self,n_passes = 4):
+		# Give the optional n_passes argument, default 4
+		return self.my_summarizer_context.summarize(n_passes)
 	
 
 if __name__ == "__main__":
@@ -234,5 +250,8 @@ if __name__ == "__main__":
 
 	my_summarizer = Summarizer()
 	
-	summarized_text = my_summarizer.getSummary()
+	print("working... ", end='', file=sys.stderr)
+	summarized_text = my_summarizer.getSummary(n_passes=4)
+	print("done. ", file=sys.stderr)
+
 	print(summarized_text)
