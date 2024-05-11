@@ -213,9 +213,14 @@ def parseArgs():
 	s_default = 1
 	parser.add_argument("-s", "--summary_size", metavar='summary size', type=int, default=s_default, 
 	help=f"Number of sentences per summarized subtopic.[{s_default}]")	
-	
+
+	p_default = 4
+	parser.add_argument("-p","--passes", metavar='no. of passes', type=int, default=p_default,
+	help=f"Summary aggregated over these number of passes.[{p_default}]")
+		
 	parser.add_argument("-v","--verbose", action='store_true', default=False,
 	help=f"Enable verbose mode.")
+
 	# return the parsed args
 	return parser.parse_args()
 
@@ -239,9 +244,9 @@ class Summarizer():
 		self.my_summarizer_context.set_formatter(html_formatter)
 	
 	
-	def getSummary(self,n_passes = 4):
+	def getSummary(self):
 		# Give the optional n_passes argument, default 4
-		return self.my_summarizer_context.summarize(n_passes)
+		return self.my_summarizer_context.summarize(args.passes)
 	
 
 if __name__ == "__main__":
@@ -251,7 +256,7 @@ if __name__ == "__main__":
 	my_summarizer = Summarizer()
 	
 	print("working... ", end='', file=sys.stderr)
-	summarized_text = my_summarizer.getSummary(n_passes=4)
+	summarized_text = my_summarizer.getSummary()
 	print("done. ", file=sys.stderr)
 
 	print(summarized_text)
