@@ -53,5 +53,10 @@ summaries across multiple invocations.
 
 # Installation requirements
 
+Inside your virtual environment, use the `requirements.txt` file
+to download and install the dependencies.
+
+> `pip -r requirements.txt`
+
 - [top2vec](https://top2vec.readthedocs.io/en/stable/Top2Vec.html#installation)
 
