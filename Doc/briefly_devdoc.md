@@ -1,7 +1,7 @@
 ---
 title: \LARGE\bf{Briefly -- Devdoc}
-author: Author Name
-date: \small\sffamily{Started on 08 June, 2021}
+author: Atrij Talgery
+date: \small\sffamily{Started on 14 April, 2024}
 papersize: a4
 documentclass: book
 classoption:
@@ -76,20 +76,37 @@ understanding as the 'sub-topics'.  The topics are broken down into smaller unit
 by allotting sentences to each topic.  The top-ranking sentences or
 documents from each topic contribute to our summarized text.  
 
+## Conceptual design
+
+We can envisage the summarization process as three functions:
+
+- text prepping
+- generating the summary
+- formatting the summary for presentation
+
+Each of these can be conceptualized as an object.  For design flexibility and
+extendability, we can also think of packaging these three steps into a
+summarizing context.
+
+We try to enhance flexibility by using abstract base classes, using design
+patterns and exploiting aggregation or composition as appropriate.
+
 ## Class design
 
-The design involves taking a body of text also called the corpus, if it is very
-large.  Functions are organised into classes and objects and the Strategy pattern
-is specifically used.  The class heirarchy and the different roles they play
-are outlined in the figure.
+![UML sequence diagram](seq_dia.png)
 
-![UML class diagram](class_diagram.png)
+Functions are organised into classes and objects and the Strategy pattern
+is specifically used.  We start with the sequence diagram; the class heirarchy and the different roles they play are outlined next.
 
-There are two abstract base classes.  They are namely the Formatter and the
+![UML class diagram](class_diagram.png){ width=90% }
+
+We have the `SummarizerContext` which is an aggregation of the three function
+classes -- the three functions have been enumerated above.  The `SummarizerContext` is
+built inside the `Summary` object which is itself built by composition using the `SummarizerContext` object.
+
+There are two abstract base classes.  They are the Formatter and the
 Strategy classes.  The Formatter class takes care of formatting the output.
-The TextPrepper (`Strategy_text_prep`) implements the Strategy to take care of sentencizing the text.  The TextSummarizer (`Strategy_top2vec`) implements the Strategy to identify sub-topics and summarize the text.  These Abstract Base Classes do not play the role themselves, but distributes the responsibility to one or more child classes.
-
-> We use the top2vec topic modeller.
+The TextPrepper (`Strategy_text_prep`) implements the Strategy to take care of sentencizing the text.  The TextSummarizer (`Strategy_top2vec`) implements the Strategy to identify sub-topics and summarize the text.  These Abstract Base Classes allow for easy extension of functionality via subclasses.
 
 The Formatter base class has a subclass called the HTML Formatter.  This takes
 care of converting the output into an HTML format.
@@ -105,8 +122,6 @@ The TextSummarizer class accepts the list of documents and generates a list of
 document IDs and their corresponding scores grouped by topic.  The document
 text is also optionally available.
 
-## Formatter
-
 The formatter class takes the TextSummarizer as the input and returns the
 formatted output either in the plain format or in the HTML format.
 
@@ -116,14 +131,11 @@ The class heirarchy makes it possible to modify the behaviour of the summarizer
 quite easily.
 
 - The summarizing algorithm can be changed by inheriting from the strategy class
-and implementing the modified algorithm.  The current algorithm is top2vec.
+and implementing the modified algorithm.  The current algorithm is *top2vec*.
 - Different formatting styles can be supported by writing the appropriate classes
 for them.
 - The current text prepping style is to split the article into sentences.
 Changes are possible here as well -- example: for very large articles, the basic semantic unit can be a paragraph instead of a sentence.
-
-It is advisable not to change the interfaces.
-
 
 # References {-}
 
