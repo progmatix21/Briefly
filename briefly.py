@@ -51,7 +51,7 @@ class SummarizerContext():
 		self._formatter = formatter_obj
 		
 	def summarize(self,n_passes):
-		doc_list = self._text_prepping_strategy.executeStrategy(args.filename)
+		doc_list = self._text_prepping_strategy.executeStrategy(Summarizer.args.filename)
 		
 		summary_tuples_set = set()   # Initialize set to accumulate results
 		# of multiple passes
@@ -115,17 +115,17 @@ class Strategy_top2vec(Strategy):
 		# min cluster size should be atleast 2.  We keep it fixed and control
 		# the clustering with the merge threshold.
 		self._hdbscan_args_dict = {'min_cluster_size':2,
-		'cluster_selection_epsilon':args.merge_threshold,
+		'cluster_selection_epsilon':Summarizer.args.merge_threshold,
 		'cluster_selection_method':'eom'}
 		
 		
 	def _init_model(self):
 		# Initialize the topic modelling algorithm
-		self._model = Top2Vec(self._document_list, min_count=args.min_word_count, 
-		hdbscan_args=self._hdbscan_args_dict,verbose=args.verbose)
+		self._model = Top2Vec(self._document_list, min_count=Summarizer.args.min_word_count, 
+		hdbscan_args=self._hdbscan_args_dict,verbose=Summarizer.args.verbose)
 				
 		self._num_topics = self._model.get_num_topics()
-		self.top_docs_per_topic = args.summary_size
+		self.top_docs_per_topic = Summarizer.args.summary_size
 		self.topic_sizes,self.topic_nums = self._model.get_topic_sizes()	
 	
 	def executeStrategy(self,document_list):
@@ -226,10 +226,18 @@ def parseArgs():
 
 class Summarizer():
 	# Creates the summarizer context and gets the summary.
+	# The argument is the object with command line arguments
+
+	# Initialize a class variable to store command line arguments
+	args = None
 	
-	def __init__(self):
+	def __init__(self, args):
+		
+		# Initialise the class variable with command line args
+		Summarizer.args = args
+		
 		# Create a summarizer context
-		self.my_summarizer_context = SummarizerContext(args.filename)
+		self.my_summarizer_context = SummarizerContext(Summarizer.args.filename)
 		
 		# Create a text prepping strategy object and set it
 		text_prepper_strategy = Strategy_text_prep()
@@ -246,16 +254,17 @@ class Summarizer():
 	
 	def getSummary(self):
 		# Give the optional n_passes argument, default 4
-		return self.my_summarizer_context.summarize(args.passes)
+		return self.my_summarizer_context.summarize(Summarizer.args.passes)
 	
 
 if __name__ == "__main__":
 	
-	args = parseArgs()	
+	# Parse command line arguments
+	args = parseArgs()
 
-	my_summarizer = Summarizer()
+	my_summarizer = Summarizer(args)
 	
-	print("working... ", end='', file=sys.stderr)
+	print("working... ", end='', file=sys.stderr, flush=True)
 	summarized_text = my_summarizer.getSummary()
 	print("done. ", file=sys.stderr)
 
