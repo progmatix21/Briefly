@@ -164,8 +164,13 @@ class Strategy_text_prep(Strategy):
 	Abstract methods of Strategy base class are implemented here.
 	"""
 
+	def _make_blob_from_text(self, mass_of_text):
+		# Convert mass of text to text blob
+		text_blob = re.sub('\n',' ',mass_of_text)
+		return text_blob
+
 	def _make_blob(self,filename):
-		# Read text and return a text blob
+		# Read text file and return a text blob
 		text_blob = ""
 		try:
 			with open(os.path.join(filename),"r") as fileinput:
@@ -187,8 +192,14 @@ class Strategy_text_prep(Strategy):
 		sent_matches = re.split(split_pat, text_blob)
 		return np.array(sent_matches)
 		
-	def executeStrategy(self,filename):
-		text_blob = self._make_blob(filename)
+	def executeStrategy(self,file_or_text):
+		
+		# Filename can also be a mass of text
+		if Summarizer.web == True:  # A mass of text
+			text_blob = self._make_blob_from_text(file_or_text)
+		else: # It is a filename
+			text_blob = self._make_blob(file_or_text)
+		
 		sentence_list = self._make_sentence_list(text_blob)
 		return sentence_list
 		#return self._make_sentence_list(self._text_blob)
@@ -197,8 +208,9 @@ def parseArgs():
 	# Argument parser
 	parser = argparse.ArgumentParser(description="A program to summarize a text file.")
 
-	# Add a positional argument	
-	parser.add_argument("filename", type=str, help="The name of the file to summarize")
+	# Add option to switch to webapp
+	parser.add_argument("-f","--filename", type=str, default=None,
+	help="Optional input file to summarize; leave out for web interface")
 	
 	# Define the optional arguments
 
@@ -230,11 +242,13 @@ class Summarizer():
 
 	# Initialize a class variable to store command line arguments
 	args = None
+	web = None
 	
-	def __init__(self, args):
+	def __init__(self, args, web=False):
 		
 		# Initialise the class variable with command line args
 		Summarizer.args = args
+		Summarizer.web = web
 		
 		# Create a summarizer context
 		self.my_summarizer_context = SummarizerContext(Summarizer.args.filename)
@@ -256,16 +270,66 @@ class Summarizer():
 		# Give the optional n_passes argument, default 4
 		return self.my_summarizer_context.summarize(Summarizer.args.passes)
 	
+# Function to convert this summarizer to gradio app
+def summarizer_app(min_word_count,merge_threshold,passes,summary_size,input_text):
+	
+	# store the arguments from widget/sliders
+	w_args = Widget_args(input_text,merge_threshold,min_word_count,passes,summary_size,False)
+	# send the input text instead of filename
+	#"filename merge_threshold min_word_count passes summary_size verbose"
+	
+	web_summarizer = Summarizer(w_args,web=True)
+	#Print web status message here
+	summarized_text = web_summarizer.getSummary()
+	
+	return summarized_text
+	
 
 if __name__ == "__main__":
 	
 	# Parse command line arguments
 	args = parseArgs()
-
-	my_summarizer = Summarizer(args)
 	
-	print("working... ", end='', file=sys.stderr, flush=True)
-	summarized_text = my_summarizer.getSummary()
-	print("done. ", file=sys.stderr)
+	# Create a named tuple subclass to hold widget arguments
+	from collections import namedtuple
+	
+	Widget_args = namedtuple("Arguments",
+					"filename merge_threshold min_word_count passes summary_size verbose")
+	
+	
+	
+	if args.filename == None:   # no input file provided, invoke web interface
+		import gradio as gr
+		print("In webapp mode")
+		
+		demo = gr.Interface(
+			fn=summarizer_app,
+			
+			inputs=[gr.Slider(1,10,value=args.min_word_count,step=1,label="min word count",
+			info="Sentences with words having counts<this number will be dropped"),
+			
+			gr.Slider(0.01,0.99,value=args.merge_threshold,step=0.01,label="merge threshold",
+			info="Sentences closer than this threshold are merged into a single subtopic"),
+			
+			gr.Slider(1,10,value=args.passes,step=1,label="no of passes",
+			info="Summary aggregated over these number of passes"),
+			
+			gr.Slider(1,10,value=args.summary_size,step=1,label="summary size",
+			info="Number of sentences per summarized subtopic"),
+			
+			gr.Text(label="input text",info="Paste text to be summarized here.")],
+			
+			title="Briefly: an extractive summarizer",
+			
+			outputs=["html"]
+		)
+		demo.launch()
+	
+	else:	
+		my_summarizer = Summarizer(args,web=False)
+		
+		print("working... ", end='', file=sys.stderr, flush=True)
+		summarized_text = my_summarizer.getSummary()
+		print("done. ", file=sys.stderr)
 
-	print(summarized_text)
+		print(summarized_text)
