@@ -122,7 +122,8 @@ class Strategy_top2vec(Strategy):
 	def _init_model(self):
 		# Initialize the topic modelling algorithm
 		self._model = Top2Vec(self._document_list, min_count=Summarizer.args.min_word_count, 
-		hdbscan_args=self._hdbscan_args_dict,verbose=Summarizer.args.verbose)
+		hdbscan_args=self._hdbscan_args_dict,verbose=Summarizer.args.verbose,
+		embedding_model='doc2vec')
 				
 		self._num_topics = self._model.get_num_topics()
 		self.top_docs_per_topic = Summarizer.args.summary_size
