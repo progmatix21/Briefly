@@ -137,7 +137,24 @@ for them.
 - The current text prepping style is to split the article into sentences.
 Changes are possible here as well -- example: for very large articles, the basic semantic unit can be a paragraph instead of a sentence.
 
+## Avoiding code smells
+
+One of the challenges is to be able to access command line options or web
+widget options from deep within the object heirarchy.  This challenge has been
+addressed by making the arguments object a class variable of the top level
+`Summarizer` class.  This class variable is initialized at the time of creation
+of the `Summarizer` class.
+
+In the interest of interface segregation, the text prepper class has a
+separate interface to tackle a mass of text while in the webapp mode.
+In the CLI mode, the default interface handles file input.
+
+## Web interface
+
+We have used Gradio to provide a web interface to this application.
+
 # References {-}
 
 - <https://top2vec.readthedocs.io/en/stable/Top2Vec.html>
 - <https://github.com/ddangelov/Top2Vec>
+- <https://www.gradio.app>
