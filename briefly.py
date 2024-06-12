@@ -102,7 +102,7 @@ class HTMLFormatter(Formatter):
 		</body>		
 		</html>
 		'''
-		tagged_sents = ['<li>' + sent + '</li>' for sent in self.sentences]
+		tagged_sents = ['<li>' + sent + "." + '</li>' for sent in self.sentences]
 		return(preHTML+" ".join(tagged_sents)+postHTML)
 		
 
@@ -126,13 +126,14 @@ class Strategy_top2vec(Strategy):
 		embedding_model='doc2vec')
 				
 		self._num_topics = self._model.get_num_topics()
-		self.top_docs_per_topic = Summarizer.args.summary_size
+		self.top_docs_per_topic = Summarizer.args.summary_size # From arguments
 		self.topic_sizes,self.topic_nums = self._model.get_topic_sizes()	
 	
 	def executeStrategy(self,document_list):
 		
 		self._document_list = document_list
-		self._init_model()
+		self._len_document_list = len(self._document_list)
+		self._init_model() # Build and initialize top2vec model
 				
 		meta_documents = []
 		meta_document_scores = []
@@ -152,6 +153,31 @@ class Strategy_top2vec(Strategy):
 		meta_document_ids = [item for sublist in meta_document_ids for item in sublist]
 		meta_document_scores = [item for sublist in meta_document_scores for item in sublist]
 		meta_documents = [item for sublist in meta_documents for item in sublist]
+		
+		# Implementation for include context option
+		# Include one ID < and one > the summarized IDs in the meta_document_ids list.
+		# also include corresponding text in meta_documents list
+		
+		if Summarizer.args.include_context == True:
+			meta_document_ids_set = set(meta_document_ids) # Create set of meta_document_ids
+			# Add context IDs to the set
+			for doc_id in meta_document_ids:
+				if (doc_id-1) >= 0: # Avoid edge condition
+					meta_document_ids_set.add(doc_id-1)
+				if (doc_id+1) < self._len_document_list:
+					meta_document_ids_set.add(doc_id+1)
+			# Now the above set includes context IDs but they are unordered
+			# We sort them into a list, this list has context IDs also
+			meta_document_ids = sorted(list(meta_document_ids_set))
+			# Now, build meta_documents list from scratch to include
+			# context documents as well
+			# context documents as well
+			# context documents as well
+			# context documents as well
+			meta_documents = []
+			for doc_id in meta_document_ids:
+				meta_documents.append(self._document_list[doc_id])
+			
 		
 		# Return the summary as a list of tuples sorted on document ID.
 		# Hold back document scores because it interferes with multi-pass
@@ -211,7 +237,7 @@ def parseArgs():
 
 	# Add option to switch to webapp
 	parser.add_argument("-f","--filename", type=str, default=None,
-	help="Optional input file to summarize; leave out for web interface")
+	help="Optional input file to summarize; leave out for web interface.")
 	
 	# Define the optional arguments
 
@@ -230,9 +256,14 @@ def parseArgs():
 	p_default = 4
 	parser.add_argument("-p","--passes", metavar='no. of passes', type=int, default=p_default,
 	help=f"Summary aggregated over these number of passes.[{p_default}]")
-		
-	parser.add_argument("-v","--verbose", action='store_true', default=False,
-	help=f"Enable verbose mode.")
+	
+	i_default = False
+	parser.add_argument("-i","--include_context",action='store_true',default=i_default,
+	help=f"Include context before and after each summary line.[{i_default}]")	
+	
+	v_default = False
+	parser.add_argument("-v","--verbose", action='store_true', default=v_default,
+	help=f"Enable verbose mode.[{v_default}]")
 
 	# return the parsed args
 	return parser.parse_args()
@@ -272,12 +303,13 @@ class Summarizer():
 		return self.my_summarizer_context.summarize(Summarizer.args.passes)
 	
 # Function to convert this summarizer to gradio app
-def summarizer_app(min_word_count,merge_threshold,passes,summary_size,input_text):
+def summarizer_app(min_word_count,merge_threshold,passes,summary_size,include_context,input_text):
 	
 	# store the arguments from widget/sliders
-	w_args = Widget_args(input_text,merge_threshold,min_word_count,passes,summary_size,False)
+	w_args = Widget_args(input_text,merge_threshold,min_word_count,passes,summary_size,include_context,False)
+	# verbose flag is hard coded to False above
 	# send the input text instead of filename
-	#"filename merge_threshold min_word_count passes summary_size verbose"
+	#"filename merge_threshold min_word_count passes summary_size include_context verbose"
 	
 	web_summarizer = Summarizer(w_args,web=True)
 	#Print web status message here
@@ -295,7 +327,7 @@ if __name__ == "__main__":
 	from collections import namedtuple
 	
 	Widget_args = namedtuple("Arguments",
-					"filename merge_threshold min_word_count passes summary_size verbose")
+					"filename merge_threshold min_word_count passes summary_size include_context verbose")
 	
 	
 	
@@ -317,6 +349,8 @@ if __name__ == "__main__":
 			
 			gr.Slider(1,10,value=args.summary_size,step=1,label="summary size",
 			info="Number of sentences per summarized subtopic"),
+			
+			gr.Checkbox(value=args.include_context,label="Include context",info="Include context before and after each summary line."),
 			
 			gr.Text(label="input text",info="Paste text to be summarized here.")],
 			

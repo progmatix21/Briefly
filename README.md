@@ -15,14 +15,14 @@ flow of the summary with some contextually important sentences being dropped.
 ```
 $ python3 briefly.py -h
 usage: briefly.py [-h] [-f FILENAME] [-m min word count] [-t merge threshold] [-s summary size]
-                  [-p no. of passes] [-v]
+                  [-p no. of passes] [-i] [-v]
 
 A program to summarize a text file.
 
 optional arguments:
   -h, --help            show this help message and exit
   -f FILENAME, --filename FILENAME
-                        Optional input file to summarize; leave out for web interface
+                        Optional input file to summarize; leave out for web interface.
   -m min word count, --min_word_count min word count
                         Sentences with words having counts < this number will be dropped.[2]
   -t merge threshold, --merge_threshold merge threshold
@@ -32,7 +32,9 @@ optional arguments:
                         Number of sentences per summarized subtopic.[1]
   -p no. of passes, --passes no. of passes
                         Summary aggregated over these number of passes.[4]
-  -v, --verbose         Enable verbose mode.
+  -i, --include_context
+                        Include context before and after each summary line.[False]
+  -v, --verbose         Enable verbose mode.[False]
 ```
 
 # Brief user guide
@@ -55,6 +57,9 @@ articles to get a tight summary.
 as part of your summary.  Experiment with lower values for tighter summaries.
 - Higher values of `passes` tends to give more stable/repeatable and larger
 summaries across multiple invocations.
+- Use the `-i` or `--include_context` option to include context before and
+after a summary line.  This helps add 'continuity' to the summary.  Note that
+the context may not necessarily be part of the summary.
 
 # Installation requirements
 
