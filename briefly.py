@@ -14,6 +14,8 @@ from top2vec import Top2Vec
 import numpy as np
 import argparse
 from abc import ABC, abstractmethod
+from collections import namedtuple
+
 
 class Formatter(ABC):
 	"""
@@ -230,40 +232,50 @@ class Strategy_text_prep(Strategy):
 		sentence_list = self._make_sentence_list(text_blob)
 		return sentence_list
 		#return self._make_sentence_list(self._text_blob)
+
+# A function to return default values of arguments
+# Default values are hard coded inside this function
+
+def get_default_args():
+	
+	Default_args = namedtuple("Arguments",
+					"filename merge_threshold min_word_count passes summary_size include_context verbose")
+
+	default_args = Default_args(None, 0.5, 2, 4, 1, False, False)
+	
+	return default_args
+
 	
 def parseArgs():
 	# Argument parser
 	parser = argparse.ArgumentParser(description="A program to summarize a text file.")
 
+	# Get default args
+	defaults = get_default_args()
+	
 	# Add option to switch to webapp
-	parser.add_argument("-f","--filename", type=str, default=None,
+	parser.add_argument("-f","--filename", type=str, default=defaults.filename,
 	help="Optional input file to summarize; leave out for web interface.")
 	
 	# Define the optional arguments
 
-	m_default = 2
-	parser.add_argument("-m","--min_word_count",metavar='min word count',type=int, default=m_default, 
-	help=f"Sentences with words having counts < this number will be dropped.[{m_default}]")
+	parser.add_argument("-m","--min_word_count",metavar='min word count',type=int, default=defaults.min_word_count, 
+	help=f"Sentences with words having counts < this number will be dropped.[{defaults.min_word_count}]")
 	
-	t_default = 0.01
-	parser.add_argument("-t", "--merge_threshold", metavar='merge threshold', type=float, default=t_default, 
-	help=f"Sentences closer than this threshold are merged into a single subtopic.[{t_default}]")
+	parser.add_argument("-t", "--merge_threshold", metavar='merge threshold', type=float, default=defaults.merge_threshold, 
+	help=f"Sentences closer than this threshold are merged into a single subtopic.[{defaults.merge_threshold}]")
 
-	s_default = 1
-	parser.add_argument("-s", "--summary_size", metavar='summary size', type=int, default=s_default, 
-	help=f"Number of sentences per summarized subtopic.[{s_default}]")	
+	parser.add_argument("-s", "--summary_size", metavar='summary size', type=int, default=defaults.summary_size, 
+	help=f"Number of sentences per summarized subtopic.[{defaults.summary_size}]")	
 
-	p_default = 4
-	parser.add_argument("-p","--passes", metavar='no. of passes', type=int, default=p_default,
-	help=f"Summary aggregated over these number of passes.[{p_default}]")
+	parser.add_argument("-p","--passes", metavar='no. of passes', type=int, default=defaults.passes,
+	help=f"Summary aggregated over these number of passes.[{defaults.passes}]")
 	
-	i_default = False
-	parser.add_argument("-i","--include_context",action='store_true',default=i_default,
-	help=f"Include context before and after each summary line.[{i_default}]")	
+	parser.add_argument("-i","--include_context",action='store_true',default=defaults.include_context,
+	help=f"Include context before and after each summary line.[{defaults.include_context}]")	
 	
-	v_default = False
-	parser.add_argument("-v","--verbose", action='store_true', default=v_default,
-	help=f"Enable verbose mode.[{v_default}]")
+	parser.add_argument("-v","--verbose", action='store_true', default=defaults.verbose,
+	help=f"Enable verbose mode.[{defaults.verbose}]")
 
 	# return the parsed args
 	return parser.parse_args()
@@ -316,7 +328,58 @@ def summarizer_app(min_word_count,merge_threshold,passes,summary_size,include_co
 	summarized_text = web_summarizer.getSummary()
 	
 	return summarized_text
+
+# Special code for using Briefly in the module mode for FAST API
+# Note that the following two blocks are mutually exclusive
+if __name__ != "__main__":
 	
+	from fastapi import FastAPI, HTTPException
+	from pydantic import BaseModel
+	
+	import json
+
+	api_args = get_default_args()
+	
+	print("In REST API mode.")
+
+	app = FastAPI()
+	
+	# Create the options resource class
+	class Options(BaseModel):
+		filename: str = None
+		merge_threshold: float = api_args.merge_threshold
+		min_word_count: int = api_args.min_word_count
+		passes: int = api_args.passes
+		summary_size: int = api_args.summary_size
+		include_context: bool = api_args.include_context
+		verbose: bool = api_args.verbose
+		
+	# Create an options resource
+	options_resource = Options()
+		
+	
+	@app.get("/")
+	async def greeting() -> dict[str,str]:
+		message = '''
+Welcome to Briefly REST API.
+Endpoints are:
+POST /summary
+GET  /options
+PUT  /options
+		'''
+		return {"message":message}
+	
+	class Class_tmp(BaseModel):
+		msg: str = None
+		
+	@app.post("/summary") 
+	async def rest_get_summary(arg: Class_tmp) -> dict[str,str]:
+		return {"summary":"This is the summary"}
+
+	@app.get("/options")
+	async def rest_get_options() -> dict[str, Options]: 
+		return {"options":options_resource}
+
 
 if __name__ == "__main__":
 	
@@ -324,13 +387,11 @@ if __name__ == "__main__":
 	args = parseArgs()
 	
 	# Create a named tuple subclass to hold widget arguments
-	from collections import namedtuple
 	
 	Widget_args = namedtuple("Arguments",
 					"filename merge_threshold min_word_count passes summary_size include_context verbose")
 	
-	
-	
+
 	if args.filename == None:   # no input file provided, invoke web interface
 		import gradio as gr
 		print("In webapp mode")
@@ -359,6 +420,8 @@ if __name__ == "__main__":
 			outputs=["html"]
 		)
 		demo.launch()
+	
+	
 	
 	else:	
 		my_summarizer = Summarizer(args,web=False)
