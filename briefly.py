@@ -106,8 +106,21 @@ class HTMLFormatter(Formatter):
 		'''
 		tagged_sents = ['<li>' + sent + "." + '</li>' for sent in self.sentences]
 		return(preHTML+" ".join(tagged_sents)+postHTML)
-		
 
+		
+class PlainFormatter(Formatter):
+	"""
+	This is the subclass of the Formatter class for plain formatting.
+	Abstract methods of the Formatter class are implemented here.
+	Use with REST API.
+	"""
+	def __init__(self):
+		pass
+		
+	def getSummary(self,summary,condensation_ratio):
+		_,self.sentences = list(zip(*summary))
+		return(".  ".join(self.sentences)+".")
+	
 class Strategy_top2vec(Strategy):
 	"""
 	This is a subclass of Strategy base class.
@@ -172,9 +185,6 @@ class Strategy_top2vec(Strategy):
 			# We sort them into a list, this list has context IDs also
 			meta_document_ids = sorted(list(meta_document_ids_set))
 			# Now, build meta_documents list from scratch to include
-			# context documents as well
-			# context documents as well
-			# context documents as well
 			# context documents as well
 			meta_documents = []
 			for doc_id in meta_document_ids:
@@ -288,7 +298,7 @@ class Summarizer():
 	args = None
 	web = None
 	
-	def __init__(self, args, web=False):
+	def __init__(self, args, web=False, formatter='html'):
 		
 		# Initialise the class variable with command line args
 		Summarizer.args = args
@@ -306,10 +316,12 @@ class Summarizer():
 		self.my_summarizer_context.set_summarizing_strategy(top2vec_strategy)
 		
 		# Create a formatter and set it
-		html_formatter = HTMLFormatter()
-		self.my_summarizer_context.set_formatter(html_formatter)
-	
-	
+		if formatter == 'html':
+			self.my_summarizer_context.set_formatter(HTMLFormatter())
+		else:
+			self.my_summarizer_context.set_formatter(PlainFormatter())
+		
+		
 	def getSummary(self):
 		# Give the optional n_passes argument, default 4
 		return self.my_summarizer_context.summarize(Summarizer.args.passes)
@@ -387,7 +399,7 @@ PUT  /options
 		options_resource.verbose = False  # Force verbose to false
 
 		# Create the summarizer		
-		rest_summarizer = Summarizer(options_resource,web=True)
+		rest_summarizer = Summarizer(options_resource,web=True,formatter='plain')
 		summarized_text = rest_summarizer.getSummary()		
 
 		return {"text":summarized_text}
@@ -413,6 +425,8 @@ PUT  /options
 		print(options_update.merge_threshold)
 		return options_resource
 
+
+# For webapp and command line
 if __name__ == "__main__":
 	
 	# Parse command line arguments
@@ -452,11 +466,9 @@ if __name__ == "__main__":
 			outputs=["html"]
 		)
 		demo.launch()
-	
-	
-	
-	else:	
-		my_summarizer = Summarizer(args,web=False)
+		
+	else:	# Stay with the command line interface
+		my_summarizer = Summarizer(args,web=False,formatter='html')
 		
 		print("working... ", end='', file=sys.stderr, flush=True)
 		summarized_text = my_summarizer.getSummary()
