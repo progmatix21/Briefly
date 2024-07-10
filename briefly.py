@@ -342,17 +342,21 @@ if __name__ != "__main__":
 	
 	print("In REST API mode.")
 
-	app = FastAPI()
+	app = FastAPI(
+	title="Briefly: An extractive summarizer",
+    description="REST API interface for a summarizer service.",
+    version="0.1.0",
+    )
 	
 	# Create the options resource class
 	class Options(BaseModel):
-		filename: str = None
+		filename: str = None 
 		merge_threshold: float = api_args.merge_threshold
 		min_word_count: int = api_args.min_word_count
 		passes: int = api_args.passes
 		summary_size: int = api_args.summary_size
 		include_context: bool = api_args.include_context
-		verbose: bool = api_args.verbose
+		verbose: bool = False
 		
 	# Create an options resource
 	options_resource = Options()
@@ -369,17 +373,45 @@ PUT  /options
 		'''
 		return {"message":message}
 	
-	class Class_tmp(BaseModel):
-		msg: str = None
+	
+	# Define a class for text
+	class Text(BaseModel):
+		text: str = None
+	
+	# Create summary from client-supplied text and return summary to client
+	@app.post("/summary")
+	async def rest_get_summary(text_to_summarize: Text) -> Text:
+		'''Create a summary from supplied text'''
 		
-	@app.post("/summary") 
-	async def rest_get_summary(arg: Class_tmp) -> dict[str,str]:
-		return {"summary":"This is the summary"}
+		options_resource.filename = text_to_summarize.text
+		options_resource.verbose = False  # Force verbose to false
 
+		# Create the summarizer		
+		rest_summarizer = Summarizer(options_resource,web=True)
+		summarized_text = rest_summarizer.getSummary()		
+
+		return {"text":summarized_text}
+
+	
+	# Client receives current options in the system
 	@app.get("/options")
-	async def rest_get_options() -> dict[str, Options]: 
-		return {"options":options_resource}
+	async def rest_get_options() -> Options:
+		'''Get current option values'''
+		
+		#return {"options":options_resource}
+		return options_resource
 
+	
+	# Update user's options	
+	@app.put("/options")
+	async def rest_put_options(options_update: Options) -> Options:
+		'''Update/modify options.  Return updated options.'''
+		
+		# Update golden copy of options
+		options_resource.__dict__.update(options_update.__dict__)
+		
+		print(options_update.merge_threshold)
+		return options_resource
 
 if __name__ == "__main__":
 	
