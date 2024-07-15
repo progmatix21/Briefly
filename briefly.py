@@ -148,8 +148,15 @@ class Strategy_top2vec(Strategy):
 		
 		self._document_list = document_list
 		self._len_document_list = len(self._document_list)
-		self._init_model() # Build and initialize top2vec model
-				
+		
+		error_msg = '''ERROR: Document too short.  Try with a longer document
+		and/or a smaller value of merge threshold.'''
+		
+		try:
+			self._init_model() # Build and initialize top2vec model
+		except:
+			return [(0,error_msg)]
+			
 		meta_documents = []
 		meta_document_scores = []
 		meta_document_ids = []
@@ -362,7 +369,7 @@ if __name__ != "__main__":
 	
 	# Create the options resource class
 	class Options(BaseModel):
-		filename: str = None 
+		filename: str = "" 
 		merge_threshold: float = api_args.merge_threshold
 		min_word_count: int = api_args.min_word_count
 		passes: int = api_args.passes
@@ -422,7 +429,6 @@ PUT  /options
 		# Update golden copy of options
 		options_resource.__dict__.update(options_update.__dict__)
 		
-		print(options_update.merge_threshold)
 		return options_resource
 
 
