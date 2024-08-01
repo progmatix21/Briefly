@@ -46,7 +46,8 @@ optional arguments:
 
 
 Invoking **Briefly** without the optional file argument brings up the web interface
-on `http://localhost:7860`.
+on `http://localhost:7860`.  Use the sparkline to understand the distribution
+of the extracted summary.
 
 
 ![Briefly web app](Doc/briefly_interface.png)

@@ -15,7 +15,14 @@ import numpy as np
 import argparse
 from abc import ABC, abstractmethod
 from collections import namedtuple
+import math
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import base64
+
+from io import BytesIO
 
 class Formatter(ABC):
 	"""
@@ -83,9 +90,43 @@ class HTMLFormatter(Formatter):
 	# We want just the sentences
 	def __init__(self):
 		pass
+	
+	# Adapted from: https://www.markhneedham.com/blog/2017/09/23/python-3-create-sparklines-using-matplotlib/
+	def sparkline(self, summary_lines, n_bins, vline, figsize=(8,0.5)):
+		"""
+		Returns an HTML image tag containing a base 64 encoded sparkline
+		style plot of the summary.
+		"""
+		
+		fig, ax = plt.subplots(1,1, figsize=figsize)
+		
+		ax.hist(summary_lines, bins=n_bins)  #Plot a histogram with 100 bins
+		
+		for k,v in ax.spines.items():
+			if k == 'bottom':
+				v.set_visible(True)
+			else:
+				v.set_visible(False)
+		
+		# Line to mark the end of summary
+		plt.axvline(vline, color='0.8', linestyle='--')  
+		
+		# Label the y axis with values
+		ax.set_yticks([])
+		
+		# Other styling of the image
+		img = BytesIO()
+		plt.savefig(img, transparent=True, bbox_inches='tight')
+		img.seek(0)
+		plt.close()
+		
+		# Return format of image
+		return base64.b64encode(img.read()).decode("UTF-8")
 		
 	def getSummary(self,summary,condensation_ratio):
-		_,self.sentences = list(zip(*summary))
+		# Input: summary tuples: (doc_id, sentence)
+		# returns: HTML formatted summary
+		sent_ids,self.sentences = list(zip(*summary))
 		
 		c_ratio = condensation_ratio
 		
@@ -97,7 +138,13 @@ class HTMLFormatter(Formatter):
 		<h1>Briefly: summary</h1>
 		<ul>
 		'''
+		original_doc_length = math.ceil(len(sent_ids)/c_ratio)
+		n_bins = min(100,original_doc_length)
+		
+		# sparkline implementation
+		
 		postHTML=f'''
+		<div align="center"><img src="data:image/png;base64,{self.sparkline(sent_ids,n_bins,original_doc_length)}"><div>
 		</ul>
 		<small style="font-size=5px;">Condensed to {c_ratio}</small><br/>
 		<small style="font-size=5px;">Generated with <a href="https://github.com/progmatix21/Briefly">Briefly</a></small>
