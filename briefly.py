@@ -138,7 +138,11 @@ class HTMLFormatter(Formatter):
 		<h1>Briefly: summary</h1>
 		<ul>
 		'''
-		original_doc_length = math.ceil(len(sent_ids)/c_ratio)
+		try:
+			original_doc_length = math.ceil(len(sent_ids)/c_ratio)
+		except:
+			original_doc_length = np.nan
+			
 		n_bins = min(100,original_doc_length)
 		
 		# sparkline implementation
@@ -179,13 +183,31 @@ class Strategy_top2vec(Strategy):
 		self._hdbscan_args_dict = {'min_cluster_size':2,
 		'cluster_selection_epsilon':Summarizer.args.merge_threshold,
 		'cluster_selection_method':'eom'}
+		self._model = None
 		
 		
 	def _init_model(self):
 		# Initialize the topic modelling algorithm
-		self._model = Top2Vec(self._document_list, min_count=Summarizer.args.min_word_count, 
-		hdbscan_args=self._hdbscan_args_dict,verbose=Summarizer.args.verbose,
-		embedding_model='doc2vec')
+		model_location = "./Models/"
+		#model_name = "all-MiniLM-L6-v2"
+		model_name = "paraphrase-multilingual-MiniLM-L12-v2"
+		
+		if os.path.exists(model_location+model_name): # If pretrained model available
+			embed_model_name = model_name 
+			embed_model_path = model_location+model_name
+			
+		else:
+			embed_model_name = "doc2vec"
+			embed_model_path = None
+						
+		if self._model != None:  # Model already exists
+			self._model.compute_topics(hdbscan_args=self._hdbscan_args_dict)
+			
+		else:		
+			self._model = Top2Vec(self._document_list, min_count=Summarizer.args.min_word_count, 
+			hdbscan_args=self._hdbscan_args_dict,verbose=Summarizer.args.verbose,
+			embedding_batch_size = 4, workers=4,
+			embedding_model=embed_model_name, embedding_model_path=embed_model_path)
 				
 		self._num_topics = self._model.get_num_topics()
 		self.top_docs_per_topic = Summarizer.args.summary_size # From arguments
@@ -197,11 +219,12 @@ class Strategy_top2vec(Strategy):
 		self._len_document_list = len(self._document_list)
 		
 		error_msg = '''ERROR: Document too short.  Try with a longer document
-		and/or a smaller value of merge threshold.'''
+		and/or a smaller value of merge threshold. See console for details.'''
 		
 		try:
 			self._init_model() # Build and initialize top2vec model
-		except:
+		except Exception as e:
+			print(f"Exception while building summary:\n{e}")
 			return [(0,error_msg)]
 			
 		meta_documents = []
