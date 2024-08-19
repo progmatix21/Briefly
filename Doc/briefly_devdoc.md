@@ -153,6 +153,34 @@ In the CLI mode, the default interface handles file input.
 
 We have used Gradio to provide a web interface to this application.
 
+# Enhancements
+
+## REST API
+
+One idea to make the summarizer available to a large number of people is
+by implementing it as a service.
+This means we can make it available through the
+LAN or through the internet.  We give the service a REST API.
+This ensures that we can communicate with our app remotely.
+
+Communication occurs through resources referred by endpoints.  The endpoint
+`/options` contains the options to get the desired summary output.
+
+Interaction with the API occurs with three types of requests: `GET`, `PUT`
+and `POST`.  The `GET` request returns the resources we need.  `options` is a
+resource that can be returned this way.
+The `PUT` request can be used to change the resource.  The parameters inside the
+`options` resource is changed using this request.
+However, there is a resource that we have to create.  This is the `summary` resource
+referred by the `/summary` endpoint.  The `POST` request creates the
+final summary and returns it.  Additionally, there is a `/` endpoint that can be
+used to check the status of the service.
+
+FastAPI runs our REST API on our local server.
+
+![REST API interface](rest_api.png)
+
+
 # References {-}
 
 - <https://top2vec.readthedocs.io/en/stable/Top2Vec.html>
