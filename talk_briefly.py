@@ -51,19 +51,15 @@ class BrieflyClient(BrieflyAPI):
     
     def get_options(self):
         """Get the options from the summarizer service via REST API and return it."""
-        if self.is_okay():
-            response = requests.get(self.url+BrieflyClient.options_endpoint).json()
-            return str(response)
-        else:
-            return {}
+        response = requests.get(self.url+BrieflyClient.options_endpoint).json()
+        return response  # Python dict
 
     
     def set_options(self, options):
         """Set the options for the summarizer service REST API and return updated options."""
-        
-        response = requests.put(self.url+BrieflyClient.options_endpoint,json=options)
-        
-        return str(response.json())
+        # options is a Python dict
+        response = requests.put(self.url+BrieflyClient.options_endpoint,json=options).json()
+        return response  # a Python dict
 
 
     def get_summary(self,file_lines):
