@@ -3,12 +3,16 @@
 **Briefly** is an experimental extractive text summarizer exploiting
 the principles of topic modelling.
 
-It has a command line interface, a convenient web interface and a REST
-interface.
+It has: 
+
+- a command line interface 
+- a convenient web interface 
+- a REST interface, and
+- a client side library `talk_briefly` for the REST interface
 
 Being an extractive summarizer, it captures the semantically important sentences
-as determined by the modelling algorithm.  There can be discontinuities in the
-flow of the summary with some contextually important sentences being dropped.
+as determined by the modelling algorithm.  It is relatively 'safe' because it
+does not generate sentences on its own.
 
 # Brief user guide
 
@@ -44,7 +48,6 @@ optional arguments:
 
 ## Web app
 
-
 Invoking **Briefly** without the optional file argument brings up the web interface
 on `http://localhost:7860`.  Use the sparkline to understand the distribution
 of the extracted summary.
@@ -53,6 +56,8 @@ of the extracted summary.
 ![Briefly web app](Doc/briefly_interface.png)
 
 ## REST API
+
+The Briefly summarizer can be run as a service with REST endpoints.
 
 ```fastapi run briefly.py``` runs the summarizer exposing a REST API on the URL
 `http://localhost:8000`.
@@ -63,6 +68,42 @@ of the extracted summary.
 - To retrieve options from the app, use the `/options` GET endpoint.  
 - To create a summary and retrieve it, use the `/summary` POST endpoint while
 providing the text to be summarized as a JSON object.  
+
+# Installation requirements
+
+Inside your virtual environment, use the `requirements.txt` file
+to download and install the dependencies.
+
+> `pip -r requirements.txt`
+
+## The client library: `talk_briefly`
+
+The `talk_briefly` library lets you write your own summarizer client with
+just a few lines of code.
+
+```python
+from talk_briefly import BrieflyClient # Import the Briefly client module
+
+bc = BrieflyClient("http://localhost:8000")  # Instantiate the Briefly client
+
+print(f"Service is available: {bc.is_okay()}")  # Check if the service is available
+
+old_opt = bc.get_options()  # Get current options and print
+print(f"Current options:{old_opt}")
+
+# Modify any current options that you choose
+new_opt = old_opt.copy()
+new_opt.update({"merge_threshold":0.8,"passes":1})
+
+print(f"Options set as: {bc.set_options(new_opt)}")  # Set and print new options
+
+with open("./Text/mayon_volcano.txt","r") as f:  # Read a file to summarize
+    all_lines = f.read()
+    
+print(f"Summarized text:\n{bc.get_summary(all_lines)}") # Get and print the summary
+```
+
+## Notes
 
 All arguments are set to default values to get a reasonable summary.  However,
 you can experiment with the arguments within some limits.
@@ -82,12 +123,8 @@ summaries across multiple invocations.
 after a summary line.  This helps add 'continuity' to the summary.  Note that
 the context may not necessarily be part of the summary.  
 
-# Installation requirements
 
-Inside your virtual environment, use the `requirements.txt` file
-to download and install the dependencies.
-
-> `pip -r requirements.txt`
+## References
 
 - [top2vec](https://top2vec.readthedocs.io/en/stable/Top2Vec.html#installation)
 
