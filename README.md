@@ -14,6 +14,8 @@ Being an extractive summarizer, it captures the semantically important sentences
 as determined by the modelling algorithm.  It is relatively 'safe' because it
 does not generate sentences on its own.
 
+**Check out the interactive demo on [huggingface](https://huggingface.co/spaces/vecspace/brieflyhf).**
+
 # Brief user guide
 
 ## CLI
@@ -69,13 +71,6 @@ The Briefly summarizer can be run as a service with REST endpoints.
 - To create a summary and retrieve it, use the `/summary` POST endpoint while
 providing the text to be summarized as a JSON object.  
 
-# Installation requirements
-
-Inside your virtual environment, use the `requirements.txt` file
-to download and install the dependencies.
-
-> `pip -r requirements.txt`
-
 ## The client library: `talk_briefly`
 
 The `talk_briefly` library lets you write your own summarizer client with
@@ -103,7 +98,17 @@ with open("./Text/mayon_volcano.txt","r") as f:  # Read a file to summarize
 print(f"Summarized text:\n{bc.get_summary(all_lines)}") # Get and print the summary
 ```
 
-## Notes
+# Installation
+
+Inside your virtual environment, use the `requirements.txt` file
+to download and install the dependencies.
+
+> `pip -r requirements.txt`
+
+**Optional step:** Use the script `download_model.py` to download and save
+a copy of the sentence embedding BERT model locally.
+
+# Notes
 
 All arguments are set to default values to get a reasonable summary.  However,
 you can experiment with the arguments within some limits.
@@ -122,9 +127,6 @@ summaries across multiple invocations.
 - Use the `-i` or `--include_context` option to include context before and
 after a summary line.  This helps add 'continuity' to the summary.  Note that
 the context may not necessarily be part of the summary.  
+- Information about top2vec is available [here](https://top2vec.readthedocs.io/en/stable/Top2Vec.html).
 
-
-## References
-
-- [top2vec](https://top2vec.readthedocs.io/en/stable/Top2Vec.html#installation)
 
