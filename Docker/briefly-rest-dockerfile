@@ -1,0 +1,9 @@
+# Docker file to generate REST docker image from briefly base image.
+# Use the Base image
+FROM briefly-base
+
+# install incremental dependencies
+COPY requirements-rest.txt .
+RUN pip install --no-cache-dir -r requirements-rest.txt
+EXPOSE 8000
+CMD ["fastapi","run","briefly.py"]

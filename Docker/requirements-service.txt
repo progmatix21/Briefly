@@ -1,0 +1,9 @@
+# requirements for briefly REST image
+# These requirements build on the requirements already met in the base image.
+fastapi[standard]
+##top2vec
+#sentence-transformers
+#torch
+matplotlib
+##scipy<=1.12.0
+gradio

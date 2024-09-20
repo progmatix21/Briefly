@@ -1,0 +1,15 @@
+# Docker file to generate REST docker image from briefly base image.
+# Use the Base image
+FROM briefly-base
+
+# install incremental dependencies
+COPY requirements-service.txt .
+RUN pip install --no-cache-dir -r requirements-service.txt
+
+COPY mode_selector.sh .
+# Expose ports for REST and web services
+EXPOSE 8000  
+EXPOSE 7860  
+ENV GRADIO_SERVER_NAME="0.0.0.0"
+
+ENTRYPOINT ["/bin/bash","mode_selector.sh"]

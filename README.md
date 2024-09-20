@@ -108,6 +108,11 @@ to download and install the dependencies.
 **Optional step:** Use the script `download_model.py` to download and save
 a copy of the sentence embedding BERT model locally.
 
+# Dockerization
+
+For creating Docker image for running both Briefly web service and REST service,
+refer to instructions in the `Docker` folder.
+
 # Notes
 
 All arguments are set to default values to get a reasonable summary.  However,

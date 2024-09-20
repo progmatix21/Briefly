@@ -1,0 +1,16 @@
+# Docker file to generate base docker image of briefly.
+# Base image
+FROM python:3.9-slim-bullseye
+
+# set working directory
+WORKDIR /app
+
+# copy files
+COPY requirements-base.txt .
+
+# install dependencies
+RUN pip install --no-cache-dir -r requirements-base.txt
+
+COPY briefly*.py .
+
+CMD ["true"]

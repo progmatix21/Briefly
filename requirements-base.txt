@@ -1,0 +1,8 @@
+# requirements for briefly base image
+
+#fastapi
+top2vec
+#sentence-transformers
+#torch
+#matplotlib
+scipy<=1.12.0
